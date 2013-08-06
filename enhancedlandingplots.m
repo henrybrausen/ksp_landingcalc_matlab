@@ -4,12 +4,15 @@ clear all;
 % Generate charts and data for each planet.
 % Uses landingcalc3
 
+% Planet Data
 planets = [
     mkplanet('Eve', 8.1717302e12, 7e5, 96708.574, 5, 7000, 80500)
     mkplanet('Kerbin', 3.5316e12, 6e5, 69077.553, 1, 5000, 21600)
     mkplanet('Duna', 3.0136321e11, 3.2e5, 41446.532, 0.2, 3000, 65517.859)
     mkplanet('Laythe', 1.962e12, 5e5, 55262.042, 0.8, 4000, 52980.879)
     ];
+
+% Calculate for each planet.
 for i = 1:numel(planets)
     genplot(planets(i));
 end
@@ -22,11 +25,19 @@ end
 function [] = genplot( planet )
     figure();
     boundfunc = @(orbit_alt, landing_alt) landingcalc3( planet.mu, planet.Rmin, planet.Ratm, planet.P0, planet.H0, planet.Trot, orbit_alt, landing_alt);
+    
+    % These are our data points. You can change the "50" to the number of data points you want per planet.
     alts = linspace(1.01*planet.Ratm, 1e6, 50);
+    
+    % Perform calculation
     landing_alts = arrayfun(@(o_alt) fzero(@(l_alt) boundfunc(o_alt, l_alt), planet.Ratm/2), alts);
+    
+    % Rudimentary error / sensitivity analysis
     errorPlus = arrayfun(@(o_alt, l_alt) boundfunc(o_alt, l_alt+1), alts, landing_alts);
     errorMinus = arrayfun(@(o_alt, l_alt) boundfunc(o_alt, l_alt-1), alts, landing_alts);
     errors = (planet.Rmin*pi/180).*(abs(errorPlus) + abs(errorMinus))./2;
+    
+    % Plot it!
     [AX H1 H2] = plotyy(alts, landing_alts, alts, errors);
     xlabel('Initial Orbit Altitude (m)');
     set(get(AX(1), 'YLabel'), 'String', 'Landing Periapsis (m) (Place Above Target)');
@@ -34,6 +45,8 @@ function [] = genplot( planet )
     titlestr = sprintf('Enhanced Landing Chart (%s)', planet.name);
     title(titlestr);
     grid minor;
+    
+    % Print it!
     tableTitle = sprintf('Landing PE Values for %s\n', planet.name);
     fprintf(tableTitle);
     fprintf('===================================================\n');
